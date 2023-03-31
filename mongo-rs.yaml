@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-rs0-svc
+spec:
+  type: ClusterIP
+  ports:
+  - name: mongo
+    port: 27019
+  selector:
+    app: mongo-rs0
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo-rs0
+spec:
+  selector:
+    matchLabels:
+      app: mongo-rs0
+  replicas: 3
+  serviceName: mongo-rs0-svc
+  template:
+    metadata:
+      labels:
+        app: mongo-rs0
+    spec:
+      containers:
+      - name: mongo-rs0
+        image: mongo:3.6.8
+        ports:
+        - name: mongo
+          containerPort: 27019
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        volumeMounts:
+        - name: data
+          mountPath: /data/db
+        command: ["mongod"]
+        args: ["--replSet", "rs0", "--dbpath", "/data/db", "--port", "27019", "--bind_ip_all", "--shardsvr"]
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      storageClassName: "nfs-client"
+      resources:
+        requests:
+          storage: 1Gi

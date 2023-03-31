@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongos
+spec:
+  selector:
+    matchLabels:
+      app: mongos
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mongos
+    spec:
+      containers:
+      - image: mongo:3.6.8
+        name: mongos
+        ports:
+        - name: mongos
+          containerPort: 27017
+        volumeMounts:
+        - name: mongos-data
+          mountPath: /data/db
+        command: ["mongos"]
+        args: ["--configdb", "cfg/mongo-cfg-0.mongo-cfg-svc:27010,mongo-cfg-1.mongo-cfg-svc:27010,mongo-cfg-2.mongo-cfg-svc:27010", "--bind_ip_all"]
+      volumes:
+      - name: mongos-data
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongos-svc
+spec:
+  type: ClusterIP
+  ports:
+  - name: mongo
+    port: 27017
+  selector:
+    app: mongos 
